@@ -15,11 +15,13 @@ const statusNode = document.querySelector("#status");
 const runtimeBadge = document.querySelector("#runtime-badge");
 const installButton = document.querySelector("#install-btn");
 const installStatusNode = document.querySelector("#install-status");
+const lookupBalancesButton = document.querySelector("#lookup-balances-btn");
 
 let wordlist = [];
 let currentPhrase = [];
 let currentDetails = null;
 let currentAddresses = [];
+let currentBalances = new Map();
 let deferredInstallPrompt = null;
 
 const entropyByWordCount = {
@@ -205,12 +207,14 @@ function clearPhrase() {
   currentPhrase = [];
   currentDetails = null;
   currentAddresses = [];
+  currentBalances = new Map();
   phraseGrid.replaceChildren();
   clearQrCode();
   clearEntropyDetails();
   clearDerivedAddresses();
   copyButton.disabled = true;
   clearButton.disabled = true;
+  lookupBalancesButton.disabled = true;
   statusNode.textContent = "Phrase cleared from this browser session.";
 }
 
@@ -221,12 +225,22 @@ async function applyMnemonicResult(result) {
   renderQrCode(currentPhrase);
   renderEntropyDetails(currentDetails);
   currentAddresses = await deriveBip84Addresses(currentPhrase);
-  renderDerivedAddresses(currentAddresses);
+  currentBalances = new Map();
+  renderDerivedAddresses(currentAddresses, currentBalances);
   copyButton.disabled = false;
   clearButton.disabled = false;
+  lookupBalancesButton.disabled = false;
 }
 
-function renderDerivedAddresses(addresses) {
+function formatSats(value) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatBtcFromSats(value) {
+  return `${(value / 100000000).toFixed(8)} BTC`;
+}
+
+function renderDerivedAddresses(addresses, balances = new Map()) {
   derivedAddressesNode.replaceChildren(
     ...addresses.map(({ path, address }) => {
       const wrapper = document.createElement("div");
@@ -236,7 +250,23 @@ function renderDerivedAddresses(addresses) {
       term.textContent = path;
 
       const description = document.createElement("dd");
-      description.textContent = address;
+      description.className = "address-value";
+
+      const addressLine = document.createElement("span");
+      addressLine.textContent = address;
+      description.append(addressLine);
+
+      const balance = balances.get(address);
+      if (balance) {
+        const balanceLine = document.createElement("span");
+        balanceLine.className = "address-balance";
+        balanceLine.textContent =
+          `${formatBtcFromSats(balance.totalSats)} (${formatSats(balance.totalSats)} sats)` +
+          ` | confirmed=${formatBtcFromSats(balance.confirmedSats)}` +
+          ` | mempool=${formatBtcFromSats(balance.mempoolSats)}` +
+          ` | tx_count=${balance.txCount}`;
+        description.append(balanceLine);
+      }
 
       wrapper.append(term, description);
       return wrapper;
@@ -258,6 +288,77 @@ function clearDerivedAddresses() {
 
   wrapper.append(term, description);
   derivedAddressesNode.append(wrapper);
+}
+
+async function fetchAddressBalance(address) {
+  const response = await fetch(
+    `https://mempool.space/api/address/${encodeURIComponent(address)}`,
+    {
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Balance lookup failed for ${address}: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const confirmedSats =
+    payload.chain_stats.funded_txo_sum - payload.chain_stats.spent_txo_sum;
+  const mempoolSats =
+    payload.mempool_stats.funded_txo_sum - payload.mempool_stats.spent_txo_sum;
+
+  return {
+    confirmedSats,
+    mempoolSats,
+    totalSats: confirmedSats + mempoolSats,
+    txCount: payload.chain_stats.tx_count + payload.mempool_stats.tx_count,
+  };
+}
+
+async function onLookupBalances() {
+  if (!currentAddresses.length) {
+    return;
+  }
+
+  try {
+    lookupBalancesButton.disabled = true;
+    generateButton.disabled = true;
+    convertButton.disabled = true;
+    statusNode.textContent =
+      "Looking up balances from mempool.space for the derived BIP84 addresses...";
+
+    const results = await Promise.allSettled(
+      currentAddresses.map(async ({ address }) => [address, await fetchAddressBalance(address)]),
+    );
+
+    const balances = new Map();
+    let failedLookups = 0;
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        const [address, balance] = result.value;
+        balances.set(address, balance);
+      } else {
+        failedLookups += 1;
+      }
+    }
+
+    currentBalances = balances;
+    renderDerivedAddresses(currentAddresses, currentBalances);
+
+    statusNode.textContent =
+      failedLookups === 0
+        ? "Balances loaded from mempool.space for the derived BIP84 addresses."
+        : `Balances loaded with ${failedLookups} lookup failure${failedLookups === 1 ? "" : "s"}.`;
+  } catch (error) {
+    statusNode.textContent =
+      error instanceof Error ? error.message : "Balance lookup failed.";
+  } finally {
+    generateButton.disabled = false;
+    convertButton.disabled = false;
+    lookupBalancesButton.disabled = currentAddresses.length === 0;
+  }
 }
 
 async function onGenerate() {
@@ -401,6 +502,7 @@ copyButton.addEventListener("click", onCopy);
 clearButton.addEventListener("click", clearPhrase);
 convertButton.addEventListener("click", onConvertEntropy);
 installButton.addEventListener("click", onInstallApp);
+lookupBalancesButton.addEventListener("click", onLookupBalances);
 entropyHexInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();

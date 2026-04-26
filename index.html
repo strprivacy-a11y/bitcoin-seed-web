@@ -71,6 +71,14 @@ client-side bip39 + qr
           <p id="runtime-badge" class="runtime-badge"></p>
         </div>
 
+        <div class="network-panel">
+          <button id="lookup-balances-btn" class="terminal-btn" disabled>lookup_balances</button>
+          <p class="network-note">
+            optional: queries mempool.space for derived address balances and reveals those addresses
+            to that service
+          </p>
+        </div>
+
         <div class="install-panel">
           <button id="install-btn" class="terminal-btn" hidden>install_app</button>
           <p id="install-status" class="install-status">
