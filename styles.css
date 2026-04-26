@@ -237,6 +237,10 @@ select:focus,
   overflow-wrap: anywhere;
 }
 
+#derived-addresses .detail-row {
+  grid-template-columns: 148px minmax(0, 1fr);
+}
+
 .qr-panel {
   min-width: 0;
 }

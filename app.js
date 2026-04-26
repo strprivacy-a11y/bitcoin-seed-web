@@ -1,4 +1,5 @@
 import { createQrSvg } from "./lib/qr-svg.js";
+import { deriveBip84Addresses } from "./lib/bip84.js";
 
 const wordCountSelect = document.querySelector("#word-count");
 const generateButton = document.querySelector("#generate-btn");
@@ -9,6 +10,7 @@ const entropyHexInput = document.querySelector("#entropy-hex");
 const phraseGrid = document.querySelector("#phrase-grid");
 const qrCodeNode = document.querySelector("#qr-code");
 const entropyDetailsNode = document.querySelector("#entropy-details");
+const derivedAddressesNode = document.querySelector("#derived-addresses");
 const statusNode = document.querySelector("#status");
 const runtimeBadge = document.querySelector("#runtime-badge");
 const installButton = document.querySelector("#install-btn");
@@ -17,6 +19,7 @@ const installStatusNode = document.querySelector("#install-status");
 let wordlist = [];
 let currentPhrase = [];
 let currentDetails = null;
+let currentAddresses = [];
 let deferredInstallPrompt = null;
 
 const entropyByWordCount = {
@@ -201,22 +204,60 @@ function clearEntropyDetails() {
 function clearPhrase() {
   currentPhrase = [];
   currentDetails = null;
+  currentAddresses = [];
   phraseGrid.replaceChildren();
   clearQrCode();
   clearEntropyDetails();
+  clearDerivedAddresses();
   copyButton.disabled = true;
   clearButton.disabled = true;
   statusNode.textContent = "Phrase cleared from this browser session.";
 }
 
-function applyMnemonicResult(result) {
+async function applyMnemonicResult(result) {
   currentPhrase = result.words;
   currentDetails = result.details;
   renderPhrase(currentPhrase);
   renderQrCode(currentPhrase);
   renderEntropyDetails(currentDetails);
+  currentAddresses = await deriveBip84Addresses(currentPhrase);
+  renderDerivedAddresses(currentAddresses);
   copyButton.disabled = false;
   clearButton.disabled = false;
+}
+
+function renderDerivedAddresses(addresses) {
+  derivedAddressesNode.replaceChildren(
+    ...addresses.map(({ path, address }) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "detail-row";
+
+      const term = document.createElement("dt");
+      term.textContent = path;
+
+      const description = document.createElement("dd");
+      description.textContent = address;
+
+      wrapper.append(term, description);
+      return wrapper;
+    }),
+  );
+}
+
+function clearDerivedAddresses() {
+  derivedAddressesNode.replaceChildren();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "detail-row";
+
+  const term = document.createElement("dt");
+  term.textContent = "status";
+
+  const description = document.createElement("dd");
+  description.textContent = "no addresses derived yet";
+
+  wrapper.append(term, description);
+  derivedAddressesNode.append(wrapper);
 }
 
 async function onGenerate() {
@@ -227,9 +268,9 @@ async function onGenerate() {
 
     const result = await generateMnemonic(Number(wordCountSelect.value));
     entropyHexInput.value = result.details.entropyHex;
-    applyMnemonicResult(result);
+    await applyMnemonicResult(result);
     statusNode.textContent =
-      "Mnemonic and QR generated locally. Nothing was sent to a server.";
+      "Mnemonic, QR, and BIP84 addresses generated locally. Nothing was sent to a server.";
   } catch (error) {
     statusNode.textContent = error instanceof Error ? error.message : String(error);
   } finally {
@@ -263,9 +304,9 @@ async function onConvertEntropy() {
     const result = await buildMnemonicFromEntropy(entropyBytes);
     wordCountSelect.value = String(result.words.length);
     entropyHexInput.value = result.details.entropyHex;
-    applyMnemonicResult(result);
+    await applyMnemonicResult(result);
     statusNode.textContent =
-      "Mnemonic and QR derived locally from entropy_hex. Nothing was sent to a server.";
+      "Mnemonic, QR, and BIP84 addresses derived locally from entropy_hex. Nothing was sent to a server.";
   } catch (error) {
     statusNode.textContent = error instanceof Error ? error.message : String(error);
   } finally {
@@ -381,6 +422,7 @@ window.addEventListener("appinstalled", () => {
 setRuntimeBadge();
 clearQrCode();
 clearEntropyDetails();
+clearDerivedAddresses();
 setInstallState({
   message: isInstalledApp()
     ? "app is already installed on this device."
