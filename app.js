@@ -4,6 +4,8 @@ const wordCountSelect = document.querySelector("#word-count");
 const generateButton = document.querySelector("#generate-btn");
 const copyButton = document.querySelector("#copy-btn");
 const clearButton = document.querySelector("#clear-btn");
+const convertButton = document.querySelector("#convert-btn");
+const entropyHexInput = document.querySelector("#entropy-hex");
 const phraseGrid = document.querySelector("#phrase-grid");
 const qrCodeNode = document.querySelector("#qr-code");
 const entropyDetailsNode = document.querySelector("#entropy-details");
@@ -49,11 +51,35 @@ async function sha256(bytes) {
   return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
 }
 
-async function generateMnemonic(wordCount) {
-  const entropyBits = entropyByWordCount[wordCount];
-  const entropyBytes = new Uint8Array(entropyBits / 8);
-  crypto.getRandomValues(entropyBytes);
+function parseEntropyHex(value) {
+  const normalized = value.trim().toLowerCase();
 
+  if (!normalized) {
+    throw new Error("Enter entropy_hex before converting.");
+  }
+
+  if (!/^[0-9a-f]+$/.test(normalized)) {
+    throw new Error("entropy_hex must contain only 0-9 and a-f.");
+  }
+
+  if (normalized.length % 2 !== 0) {
+    throw new Error("entropy_hex must have an even number of characters.");
+  }
+
+  const bytes = normalized.length / 2;
+  const bits = bytes * 8;
+
+  if (![128, 160, 192, 224, 256].includes(bits)) {
+    throw new Error("entropy_hex must be 128, 160, 192, 224, or 256 bits.");
+  }
+
+  return new Uint8Array(
+    normalized.match(/.{2}/g).map((pair) => Number.parseInt(pair, 16)),
+  );
+}
+
+async function buildMnemonicFromEntropy(entropyBytes) {
+  const entropyBits = entropyBytes.length * 8;
   const checksumBytes = await sha256(entropyBytes);
   const checksumLength = entropyBits / 32;
   const entropyBinary = bytesToBinary(entropyBytes);
@@ -84,6 +110,13 @@ async function generateMnemonic(wordCount) {
       qrPayloadChars: words.join(" ").length,
     },
   };
+}
+
+async function generateMnemonic(wordCount) {
+  const entropyBits = entropyByWordCount[wordCount];
+  const entropyBytes = new Uint8Array(entropyBits / 8);
+  crypto.getRandomValues(entropyBytes);
+  return buildMnemonicFromEntropy(entropyBytes);
 }
 
 function renderPhrase(words) {
@@ -173,26 +206,32 @@ function clearPhrase() {
   statusNode.textContent = "Phrase cleared from this browser session.";
 }
 
+function applyMnemonicResult(result) {
+  currentPhrase = result.words;
+  currentDetails = result.details;
+  renderPhrase(currentPhrase);
+  renderQrCode(currentPhrase);
+  renderEntropyDetails(currentDetails);
+  copyButton.disabled = false;
+  clearButton.disabled = false;
+}
+
 async function onGenerate() {
   try {
     generateButton.disabled = true;
+    convertButton.disabled = true;
     statusNode.textContent = "Generating entropy, checksum, and QR locally...";
 
     const result = await generateMnemonic(Number(wordCountSelect.value));
-    currentPhrase = result.words;
-    currentDetails = result.details;
-    renderPhrase(currentPhrase);
-    renderQrCode(currentPhrase);
-    renderEntropyDetails(currentDetails);
-
-    copyButton.disabled = false;
-    clearButton.disabled = false;
+    entropyHexInput.value = result.details.entropyHex;
+    applyMnemonicResult(result);
     statusNode.textContent =
       "Mnemonic and QR generated locally. Nothing was sent to a server.";
   } catch (error) {
     statusNode.textContent = error instanceof Error ? error.message : String(error);
   } finally {
     generateButton.disabled = false;
+    convertButton.disabled = false;
   }
 }
 
@@ -211,6 +250,27 @@ async function onCopy() {
   }
 }
 
+async function onConvertEntropy() {
+  try {
+    generateButton.disabled = true;
+    convertButton.disabled = true;
+    statusNode.textContent = "Deriving mnemonic from provided entropy_hex locally...";
+
+    const entropyBytes = parseEntropyHex(entropyHexInput.value);
+    const result = await buildMnemonicFromEntropy(entropyBytes);
+    wordCountSelect.value = String(result.words.length);
+    entropyHexInput.value = result.details.entropyHex;
+    applyMnemonicResult(result);
+    statusNode.textContent =
+      "Mnemonic and QR derived locally from entropy_hex. Nothing was sent to a server.";
+  } catch (error) {
+    statusNode.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    generateButton.disabled = false;
+    convertButton.disabled = false;
+  }
+}
+
 function setRuntimeBadge() {
   runtimeBadge.textContent =
     window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -221,6 +281,13 @@ function setRuntimeBadge() {
 generateButton.addEventListener("click", onGenerate);
 copyButton.addEventListener("click", onCopy);
 clearButton.addEventListener("click", clearPhrase);
+convertButton.addEventListener("click", onConvertEntropy);
+entropyHexInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    onConvertEntropy();
+  }
+});
 
 setRuntimeBadge();
 clearQrCode();

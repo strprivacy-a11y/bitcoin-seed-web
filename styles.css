@@ -92,22 +92,36 @@ body::before {
   align-items: center;
 }
 
+.manual-entropy-panel {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+
 .field {
   color: var(--accent);
 }
 
 select,
-button {
+button,
+input {
   font: inherit;
 }
 
 select,
+.entropy-input,
 .terminal-btn {
   border: 1px solid var(--line);
   background: #fffaf4;
   color: var(--text);
   padding: 8px 10px;
   border-radius: 0;
+}
+
+.entropy-input {
+  width: 100%;
 }
 
 .terminal-btn {
@@ -117,6 +131,7 @@ select,
 
 .terminal-btn:hover:enabled,
 select:focus,
+.entropy-input:focus,
 .terminal-btn:focus {
   outline: none;
   border-color: var(--text);
@@ -245,6 +260,10 @@ select:focus,
   }
 
   .phrase-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-entropy-panel {
     grid-template-columns: 1fr;
   }
 

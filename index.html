@@ -49,6 +49,20 @@ client-side bip39 + qr
           <button id="clear-btn" class="terminal-btn" disabled>clear</button>
         </div>
 
+        <div class="manual-entropy-panel">
+          <label class="field" for="entropy-hex">entropy_hex</label>
+          <input
+            id="entropy-hex"
+            class="entropy-input"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="32, 40, 48, 56, or 64 hex chars"
+          />
+          <button id="convert-btn" class="terminal-btn">convert</button>
+        </div>
+
         <div class="status-line">
           <p id="status">Loading official BIP39 English wordlist...</p>
           <p id="runtime-badge" class="runtime-badge"></p>
