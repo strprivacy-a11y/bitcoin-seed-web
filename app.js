@@ -6,11 +6,13 @@ const copyButton = document.querySelector("#copy-btn");
 const clearButton = document.querySelector("#clear-btn");
 const phraseGrid = document.querySelector("#phrase-grid");
 const qrCodeNode = document.querySelector("#qr-code");
+const entropyDetailsNode = document.querySelector("#entropy-details");
 const statusNode = document.querySelector("#status");
 const runtimeBadge = document.querySelector("#runtime-badge");
 
 let wordlist = [];
 let currentPhrase = [];
+let currentDetails = null;
 
 const entropyByWordCount = {
   12: 128,
@@ -57,6 +59,9 @@ async function generateMnemonic(wordCount) {
   const entropyBinary = bytesToBinary(entropyBytes);
   const checksumBinary = bytesToBinary(checksumBytes).slice(0, checksumLength);
   const fullBinary = `${entropyBinary}${checksumBinary}`;
+  const entropyHex = Array.from(entropyBytes, (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 
   const words = [];
 
@@ -66,7 +71,19 @@ async function generateMnemonic(wordCount) {
     words.push(wordlist[wordIndex]);
   }
 
-  return words;
+  return {
+    words,
+    details: {
+      entropyBits,
+      entropyBytes: entropyBytes.length,
+      entropyHex,
+      checksumBits: checksumBinary,
+      checksumLength,
+      fullBinaryLength: fullBinary.length,
+      phraseLength: words.length,
+      qrPayloadChars: words.join(" ").length,
+    },
+  };
 }
 
 function renderPhrase(words) {
@@ -95,15 +112,62 @@ function renderQrCode(words) {
   qrCodeNode.innerHTML = createQrSvg(phrase);
 }
 
+function renderEntropyDetails(details) {
+  const rows = [
+    ["entropy_bits", String(details.entropyBits)],
+    ["entropy_bytes", String(details.entropyBytes)],
+    ["entropy_hex", details.entropyHex],
+    ["checksum_bits", details.checksumBits],
+    ["checksum_length", String(details.checksumLength)],
+    ["binary_length", String(details.fullBinaryLength)],
+    ["phrase_words", String(details.phraseLength)],
+    ["qr_payload_chars", String(details.qrPayloadChars)],
+  ];
+
+  entropyDetailsNode.replaceChildren(
+    ...rows.map(([label, value]) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "detail-row";
+
+      const term = document.createElement("dt");
+      term.textContent = label;
+
+      const description = document.createElement("dd");
+      description.textContent = value;
+
+      wrapper.append(term, description);
+      return wrapper;
+    }),
+  );
+}
+
 function clearQrCode() {
   qrCodeNode.classList.add("empty");
   qrCodeNode.innerHTML = '<p class="empty-copy">qr will appear after generation</p>';
 }
 
+function clearEntropyDetails() {
+  entropyDetailsNode.replaceChildren();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "detail-row";
+
+  const term = document.createElement("dt");
+  term.textContent = "status";
+
+  const description = document.createElement("dd");
+  description.textContent = "no phrase generated yet";
+
+  wrapper.append(term, description);
+  entropyDetailsNode.append(wrapper);
+}
+
 function clearPhrase() {
   currentPhrase = [];
+  currentDetails = null;
   phraseGrid.replaceChildren();
   clearQrCode();
+  clearEntropyDetails();
   copyButton.disabled = true;
   clearButton.disabled = true;
   statusNode.textContent = "Phrase cleared from this browser session.";
@@ -114,9 +178,12 @@ async function onGenerate() {
     generateButton.disabled = true;
     statusNode.textContent = "Generating entropy, checksum, and QR locally...";
 
-    currentPhrase = await generateMnemonic(Number(wordCountSelect.value));
+    const result = await generateMnemonic(Number(wordCountSelect.value));
+    currentPhrase = result.words;
+    currentDetails = result.details;
     renderPhrase(currentPhrase);
     renderQrCode(currentPhrase);
+    renderEntropyDetails(currentDetails);
 
     copyButton.disabled = false;
     clearButton.disabled = false;
@@ -157,6 +224,7 @@ clearButton.addEventListener("click", clearPhrase);
 
 setRuntimeBadge();
 clearQrCode();
+clearEntropyDetails();
 
 loadWordlist()
   .then((words) => {

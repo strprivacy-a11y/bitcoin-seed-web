@@ -176,6 +176,39 @@ select:focus,
   color: var(--text);
 }
 
+.details-panel {
+  margin-top: 18px;
+}
+
+.details-grid {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: #060d07;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px dashed rgba(183, 255, 133, 0.12);
+}
+
+.detail-row:last-child {
+  border-bottom: 0;
+}
+
+.detail-row dt {
+  color: var(--muted);
+}
+
+.detail-row dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .qr-panel {
   min-width: 0;
 }
@@ -213,5 +246,10 @@ select:focus,
 
   .phrase-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }
