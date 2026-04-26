@@ -6,67 +6,70 @@
     <title>Mnemonic Lab</title>
     <meta
       name="description"
-      content="Client-side BIP39 mnemonic generator for offline testing and education."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
-      rel="stylesheet"
+      content="Client-side BIP39 mnemonic generator with QR output and retro text interface."
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="shell">
-      <section class="hero">
-        <p class="eyebrow">Mnemonic Lab</p>
-        <h1>BIP39 phrase generator that runs in your browser.</h1>
-        <p class="lede">
-          This page generates Bitcoin-compatible mnemonic phrases on the client
-          side with Web Crypto. It is for offline testing and education. Do not
-          trust a public website with production wallet secrets.
+      <header class="masthead panel">
+        <pre class="ascii-logo" aria-hidden="true">
+MNEMONIC_LAB v2
+----------------
+client-side bip39 + qr
+        </pre>
+        <p class="intro">
+          Browser-only mnemonic generator for offline testing and education.
+          Do not trust a public website with production wallet secrets.
         </p>
-      </section>
+      </header>
 
-      <section class="warning-card">
-        <div>
-          <p class="warning-label">Security warning</p>
-          <h2>Use offline if the phrase will protect real funds.</h2>
-        </div>
-        <ul class="warning-list">
-          <li>No phrase is pre-generated on page load.</li>
-          <li>Generation happens locally in your browser.</li>
-          <li>Nothing is stored unless you copy it yourself.</li>
-          <li>For real money, generate on an air-gapped device instead.</li>
+      <section class="panel">
+        <p class="section-label">[ security ]</p>
+        <ul class="terminal-list">
+          <li>> nothing is pre-generated on load</li>
+          <li>> entropy comes from Web Crypto in this browser session</li>
+          <li>> phrase state can be cleared after copy</li>
+          <li>> for real funds, use an offline device instead</li>
         </ul>
       </section>
 
-      <section class="panel">
-        <div class="controls">
-          <label class="field">
-            <span>Word count</span>
-            <select id="word-count">
-              <option value="12">12 words</option>
-              <option value="15">15 words</option>
-              <option value="18">18 words</option>
-              <option value="21">21 words</option>
-              <option value="24">24 words</option>
-            </select>
-          </label>
-
-          <div class="actions">
-            <button id="generate-btn" class="primary">Generate Phrase</button>
-            <button id="copy-btn" class="secondary" disabled>Copy</button>
-            <button id="clear-btn" class="ghost" disabled>Clear</button>
-          </div>
+      <section class="panel controls-panel">
+        <div class="command-row">
+          <label class="field" for="word-count">word_count</label>
+          <select id="word-count">
+            <option value="12">12</option>
+            <option value="15">15</option>
+            <option value="18">18</option>
+            <option value="21">21</option>
+            <option value="24">24</option>
+          </select>
+          <button id="generate-btn" class="terminal-btn">generate</button>
+          <button id="copy-btn" class="terminal-btn" disabled>copy</button>
+          <button id="clear-btn" class="terminal-btn" disabled>clear</button>
         </div>
 
-        <div class="status-row">
+        <div class="status-line">
           <p id="status">Loading official BIP39 English wordlist...</p>
           <p id="runtime-badge" class="runtime-badge"></p>
         </div>
+      </section>
 
-        <ol id="phrase-grid" class="phrase-grid" aria-live="polite"></ol>
+      <section class="panel output-panel">
+        <div>
+          <p class="section-label">[ phrase ]</p>
+          <ol id="phrase-grid" class="phrase-grid" aria-live="polite"></ol>
+        </div>
+
+        <div class="qr-panel">
+          <p class="section-label">[ qr ]</p>
+          <div id="qr-code" class="qr-code empty" aria-live="polite">
+            <p class="empty-copy">qr will appear after generation</p>
+          </div>
+          <p class="qr-note">
+            scanning this QR reveals the full mnemonic phrase as plain text
+          </p>
+        </div>
       </section>
     </main>
 

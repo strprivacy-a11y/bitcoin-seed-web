@@ -1,8 +1,11 @@
+import { createQrSvg } from "./lib/qr-svg.js";
+
 const wordCountSelect = document.querySelector("#word-count");
 const generateButton = document.querySelector("#generate-btn");
 const copyButton = document.querySelector("#copy-btn");
 const clearButton = document.querySelector("#clear-btn");
 const phraseGrid = document.querySelector("#phrase-grid");
+const qrCodeNode = document.querySelector("#qr-code");
 const statusNode = document.querySelector("#status");
 const runtimeBadge = document.querySelector("#runtime-badge");
 
@@ -51,7 +54,6 @@ async function generateMnemonic(wordCount) {
 
   const checksumBytes = await sha256(entropyBytes);
   const checksumLength = entropyBits / 32;
-
   const entropyBinary = bytesToBinary(entropyBytes);
   const checksumBinary = bytesToBinary(checksumBytes).slice(0, checksumLength);
   const fullBinary = `${entropyBinary}${checksumBinary}`;
@@ -87,26 +89,39 @@ function renderPhrase(words) {
   );
 }
 
+function renderQrCode(words) {
+  const phrase = words.join(" ");
+  qrCodeNode.classList.remove("empty");
+  qrCodeNode.innerHTML = createQrSvg(phrase);
+}
+
+function clearQrCode() {
+  qrCodeNode.classList.add("empty");
+  qrCodeNode.innerHTML = '<p class="empty-copy">qr will appear after generation</p>';
+}
+
 function clearPhrase() {
   currentPhrase = [];
   phraseGrid.replaceChildren();
+  clearQrCode();
   copyButton.disabled = true;
   clearButton.disabled = true;
-  statusNode.textContent = "Phrase cleared from the page state.";
+  statusNode.textContent = "Phrase cleared from this browser session.";
 }
 
 async function onGenerate() {
   try {
     generateButton.disabled = true;
-    statusNode.textContent = "Generating entropy and checksum locally...";
+    statusNode.textContent = "Generating entropy, checksum, and QR locally...";
 
     currentPhrase = await generateMnemonic(Number(wordCountSelect.value));
     renderPhrase(currentPhrase);
+    renderQrCode(currentPhrase);
 
     copyButton.disabled = false;
     clearButton.disabled = false;
     statusNode.textContent =
-      "Mnemonic generated in this browser session. Nothing was sent to a server.";
+      "Mnemonic and QR generated locally. Nothing was sent to a server.";
   } catch (error) {
     statusNode.textContent = error instanceof Error ? error.message : String(error);
   } finally {
@@ -132,8 +147,8 @@ async function onCopy() {
 function setRuntimeBadge() {
   runtimeBadge.textContent =
     window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "Local runtime"
-      : "Public runtime";
+      ? "runtime=local"
+      : "runtime=public";
 }
 
 generateButton.addEventListener("click", onGenerate);
@@ -141,11 +156,12 @@ copyButton.addEventListener("click", onCopy);
 clearButton.addEventListener("click", clearPhrase);
 
 setRuntimeBadge();
+clearQrCode();
 
 loadWordlist()
   .then((words) => {
     wordlist = words;
-    statusNode.textContent = "Ready. Choose a word count and generate a phrase locally.";
+    statusNode.textContent = "Ready. Select word count and generate locally.";
   })
   .catch((error) => {
     statusNode.textContent = error instanceof Error ? error.message : String(error);

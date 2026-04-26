@@ -7,8 +7,10 @@ Static web app for generating BIP39 mnemonic phrases in the browser.
 - Uses the official BIP39 English wordlist from `bitcoin/bips`.
 - Generates entropy with `crypto.getRandomValues`.
 - Computes checksum with `crypto.subtle.digest("SHA-256", ...)`.
+- Renders a QR code for the generated phrase entirely on the client side.
 - Does not send the generated phrase to a backend.
 - Public deployment is for testing and education only, not recommended for protecting real funds.
+- Uses a retro monospace text UI inspired by terminal-style layouts.
 
 ## Local preview
 
