@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mnemonic Lab</title>
+    <meta
+      name="description"
+      content="Client-side BIP39 mnemonic generator for offline testing and education."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Mnemonic Lab</p>
+        <h1>BIP39 phrase generator that runs in your browser.</h1>
+        <p class="lede">
+          This page generates Bitcoin-compatible mnemonic phrases on the client
+          side with Web Crypto. It is for offline testing and education. Do not
+          trust a public website with production wallet secrets.
+        </p>
+      </section>
+
+      <section class="warning-card">
+        <div>
+          <p class="warning-label">Security warning</p>
+          <h2>Use offline if the phrase will protect real funds.</h2>
+        </div>
+        <ul class="warning-list">
+          <li>No phrase is pre-generated on page load.</li>
+          <li>Generation happens locally in your browser.</li>
+          <li>Nothing is stored unless you copy it yourself.</li>
+          <li>For real money, generate on an air-gapped device instead.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="controls">
+          <label class="field">
+            <span>Word count</span>
+            <select id="word-count">
+              <option value="12">12 words</option>
+              <option value="15">15 words</option>
+              <option value="18">18 words</option>
+              <option value="21">21 words</option>
+              <option value="24">24 words</option>
+            </select>
+          </label>
+
+          <div class="actions">
+            <button id="generate-btn" class="primary">Generate Phrase</button>
+            <button id="copy-btn" class="secondary" disabled>Copy</button>
+            <button id="clear-btn" class="ghost" disabled>Clear</button>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <p id="status">Loading official BIP39 English wordlist...</p>
+          <p id="runtime-badge" class="runtime-badge"></p>
+        </div>
+
+        <ol id="phrase-grid" class="phrase-grid" aria-live="polite"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
