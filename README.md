@@ -9,6 +9,7 @@ Static web app for generating BIP39 mnemonic phrases in the browser.
 - Computes checksum with `crypto.subtle.digest("SHA-256", ...)`.
 - Renders a QR code for the generated phrase entirely on the client side.
 - Can derive a mnemonic from manually entered `entropy_hex` values of valid BIP39 sizes.
+- Can be installed from a supported browser as a lightweight PWA when served over HTTP(S).
 - Does not send the generated phrase to a backend.
 - Public deployment is for testing and education only, not recommended for protecting real funds.
 - Uses a retro monospace text UI inspired by terminal-style layouts.

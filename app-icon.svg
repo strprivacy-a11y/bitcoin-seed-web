@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mnemonic Lab icon">
+  <rect width="512" height="512" rx="96" fill="#fff7ef" />
+  <rect x="36" y="36" width="440" height="440" rx="72" fill="#fffdf9" stroke="#e5b17a" stroke-width="16" />
+  <path d="M132 148h248v28H132zm0 64h248v28H132zm0 64h164v28H132zm0 64h120v28H132z" fill="#f7931a" />
+  <path d="M328 276h52v92h-52zm-24 24h100v20H304z" fill="#7a3e06" />
+  <circle cx="354" cy="216" r="24" fill="#f7931a" />
+</svg>

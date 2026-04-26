@@ -8,6 +8,9 @@
       name="description"
       content="Client-side BIP39 mnemonic generator with QR output and retro text interface."
     />
+    <meta name="theme-color" content="#f7931a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -66,6 +69,13 @@ client-side bip39 + qr
         <div class="status-line">
           <p id="status">Loading official BIP39 English wordlist...</p>
           <p id="runtime-badge" class="runtime-badge"></p>
+        </div>
+
+        <div class="install-panel">
+          <button id="install-btn" class="terminal-btn" hidden>install_app</button>
+          <p id="install-status" class="install-status">
+            install is available after the page meets browser pwa requirements
+          </p>
         </div>
       </section>
 

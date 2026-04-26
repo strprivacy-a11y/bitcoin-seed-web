@@ -11,10 +11,13 @@ const qrCodeNode = document.querySelector("#qr-code");
 const entropyDetailsNode = document.querySelector("#entropy-details");
 const statusNode = document.querySelector("#status");
 const runtimeBadge = document.querySelector("#runtime-badge");
+const installButton = document.querySelector("#install-btn");
+const installStatusNode = document.querySelector("#install-status");
 
 let wordlist = [];
 let currentPhrase = [];
 let currentDetails = null;
+let deferredInstallPrompt = null;
 
 const entropyByWordCount = {
   12: 128,
@@ -278,10 +281,85 @@ function setRuntimeBadge() {
       : "runtime=public";
 }
 
+function isInstalledApp() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function setInstallState({ supported = true, available = false, message }) {
+  installButton.hidden = !available;
+  installButton.disabled = !available;
+
+  if (!supported) {
+    installStatusNode.textContent = message ?? "install prompt is not supported in this browser.";
+    return;
+  }
+
+  if (isInstalledApp()) {
+    installStatusNode.textContent = message ?? "app is already installed on this device.";
+    return;
+  }
+
+  installStatusNode.textContent =
+    message ??
+    (available
+      ? "install_app is ready for this browser session."
+      : "open this site in a supported browser to install it as an app.");
+}
+
+async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    setInstallState({
+      supported: false,
+      message: "service workers are unavailable, so app install is disabled here.",
+    });
+    return;
+  }
+
+  try {
+    await navigator.serviceWorker.register("./sw.js");
+  } catch (error) {
+    setInstallState({
+      supported: false,
+      message:
+        error instanceof Error
+          ? `service worker registration failed: ${error.message}`
+          : "service worker registration failed.",
+    });
+  }
+}
+
+async function onInstallApp() {
+  if (!deferredInstallPrompt) {
+    setInstallState({
+      message: "install prompt is not ready yet. reload after the page finishes loading.",
+    });
+    return;
+  }
+
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+
+  if (choice.outcome === "accepted") {
+    installButton.hidden = true;
+    installButton.disabled = true;
+    installStatusNode.textContent = "install accepted. this app should now appear on your device.";
+    return;
+  }
+
+  setInstallState({
+    message: "install prompt dismissed. you can trigger it again if the browser offers it later.",
+  });
+}
+
 generateButton.addEventListener("click", onGenerate);
 copyButton.addEventListener("click", onCopy);
 clearButton.addEventListener("click", clearPhrase);
 convertButton.addEventListener("click", onConvertEntropy);
+installButton.addEventListener("click", onInstallApp);
 entropyHexInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -289,9 +367,26 @@ entropyHexInput.addEventListener("keydown", (event) => {
   }
 });
 
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  setInstallState({ available: true });
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  setInstallState({ message: "app installed successfully." });
+});
+
 setRuntimeBadge();
 clearQrCode();
 clearEntropyDetails();
+setInstallState({
+  message: isInstalledApp()
+    ? "app is already installed on this device."
+    : "waiting for browser install availability...",
+});
+registerServiceWorker();
 
 loadWordlist()
   .then((words) => {
