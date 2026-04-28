@@ -1,4 +1,4 @@
-const CACHE_NAME = "mnemonic-lab-v1";
+const CACHE_NAME = "mnemonic-lab-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_ASSETS = [
   "./english.txt",
   "./manifest.webmanifest",
   "./app-icon.svg",
+  "./lib/bip84.js",
   "./lib/qr-svg.js",
   "./lib/QRCode/index.js",
   "./lib/QRCode/QRBitBuffer.js",
