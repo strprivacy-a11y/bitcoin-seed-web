@@ -9,6 +9,7 @@ Static web app for generating BIP39 mnemonic phrases in the browser.
 - Computes checksum with `crypto.subtle.digest("SHA-256", ...)`.
 - Renders a QR code for the generated phrase entirely on the client side.
 - Can derive a mnemonic from manually entered `entropy_hex` values of valid BIP39 sizes.
+- Can derive a mnemonic from manual base-20 `entropy_base20` input using `0-9` and `A-J` for 20-sided dice rolls.
 - Can optionally query `mempool.space` to show balances for the derived BIP84 addresses.
 - Can be installed from a supported browser as a lightweight PWA when served over HTTP(S).
 - Does not send the generated phrase to a backend.
