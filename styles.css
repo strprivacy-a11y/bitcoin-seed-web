@@ -74,6 +74,17 @@ body::before {
   color: var(--muted);
 }
 
+.terminal-link {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
+.terminal-link:hover,
+.terminal-link:focus {
+  color: var(--text);
+}
+
 .section-label {
   margin: 0 0 10px;
   color: var(--accent);

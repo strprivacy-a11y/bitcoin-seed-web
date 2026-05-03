@@ -43,6 +43,14 @@ const base20RollsByEntropyBits = {
   256: 60,
 };
 
+const recommendedBase20RollsByEntropyBits = {
+  128: 31,
+  160: 39,
+  192: 46,
+  224: 53,
+  256: 61,
+};
+
 const base20DigitValues = Object.freeze({
   0: 0,
   1: 1,
@@ -132,6 +140,22 @@ function bigIntToBytes(value, byteLength) {
   return bytes;
 }
 
+function getBase20RejectionInfo(entropyBits, rollCount) {
+  const totalStates = 20n ** BigInt(rollCount);
+  const entropyStateCount = 1n << BigInt(entropyBits);
+  const bucketCount = totalStates / entropyStateCount;
+  const unbiasedLimit = bucketCount * entropyStateCount;
+  const rejectedStates = totalStates - unbiasedLimit;
+  const rejectionBasisPoints = Number((rejectedStates * 10000n) / totalStates) / 100;
+
+  return {
+    totalStates,
+    entropyStateCount,
+    unbiasedLimit,
+    rejectionBasisPoints,
+  };
+}
+
 function parseEntropyBase20(value, entropyBits) {
   const normalized = value.toUpperCase().replace(/[\s,_-]+/g, "").trim();
 
@@ -157,19 +181,21 @@ function parseEntropyBase20(value, entropyBits) {
     numericValue = numericValue * 20n + BigInt(base20DigitValues[digit]);
   }
 
-  const totalStates = 20n ** BigInt(normalized.length);
-  const entropyStateCount = 1n << BigInt(entropyBits);
-  const bucketCount = totalStates / entropyStateCount;
-  const unbiasedLimit = bucketCount * entropyStateCount;
+  const rejectionInfo = getBase20RejectionInfo(entropyBits, normalized.length);
 
-  if (numericValue >= unbiasedLimit) {
+  if (numericValue >= rejectionInfo.unbiasedLimit) {
+    const recommendedRolls = recommendedBase20RollsByEntropyBits[entropyBits];
     throw new Error(
-      "entropy_base20 landed in the rejection range. Append more rolls or try a new sequence.",
+      `entropy_base20 landed in the rejection range for ${normalized.length} rolls (${rejectionInfo.rejectionBasisPoints.toFixed(2)}% of sequences at this length). Append more rolls${
+        normalized.length < recommendedRolls
+          ? `; ${recommendedRolls} rolls is the recommended target for ${entropyBits}-bit entropy`
+          : ""
+      } or try a new sequence.`,
     );
   }
 
   return {
-    bytes: bigIntToBytes(numericValue % entropyStateCount, entropyBits / 8),
+    bytes: bigIntToBytes(numericValue % rejectionInfo.entropyStateCount, entropyBits / 8),
     normalized,
     rollCount: normalized.length,
   };
@@ -558,8 +584,10 @@ async function onConvertBase20() {
 function updateBase20Note() {
   const entropyBits = entropyByWordCount[Number(wordCountSelect.value)];
   const minimumRolls = base20RollsByEntropyBits[entropyBits];
+  const recommendedRolls = recommendedBase20RollsByEntropyBits[entropyBits];
+  const minimumRejection = getBase20RejectionInfo(entropyBits, minimumRolls).rejectionBasisPoints;
   base20NoteNode.textContent =
-    `base20 for 20-sided dice: selected word_count needs at least ${minimumRolls} rolls using 0-9,A-J`;
+    `${entropyBits / 32 * 3} words needs minimum ${minimumRolls} rolls, recommended ${recommendedRolls}+ rolls using 0-9,A-J; rejection is ${minimumRejection.toFixed(2)}% at the minimum`;
 }
 
 function setRuntimeBadge() {
