@@ -35,3 +35,5 @@ cd /home/saton/bitcoin-seed-web
 vercel
 vercel --prod
 ```
+## Random String
+Terminal : cat /dev/urandom | tr -dc '0-9A-J' | fold -w 60 | head -n 1
