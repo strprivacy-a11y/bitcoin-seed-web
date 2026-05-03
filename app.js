@@ -586,8 +586,9 @@ function updateBase20Note() {
   const minimumRolls = base20RollsByEntropyBits[entropyBits];
   const recommendedRolls = recommendedBase20RollsByEntropyBits[entropyBits];
   const minimumRejection = getBase20RejectionInfo(entropyBits, minimumRolls).rejectionBasisPoints;
+  const wordCount = (entropyBits / 32) * 3;
   base20NoteNode.textContent =
-    `${entropyBits / 32 * 3} words needs minimum ${minimumRolls} rolls, recommended ${recommendedRolls}+ rolls using 0-9,A-J; rejection is ${minimumRejection.toFixed(2)}% at the minimum`;
+    `${wordCount} words accepts ${minimumRolls}+ rolls; ${minimumRolls} is minimum, ${recommendedRolls}+ recommended using 0-9,A-J; rejection is ${minimumRejection.toFixed(2)}% at the minimum`;
 }
 
 function setRuntimeBadge() {
