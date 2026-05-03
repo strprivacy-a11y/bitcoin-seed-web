@@ -80,6 +80,24 @@ client-side bip39 + qr
           <button id="convert-btn" class="terminal-btn">convert</button>
         </div>
 
+        <div class="manual-entropy-panel">
+          <label class="field" for="entropy-base20">entropy_base20</label>
+          <input
+            id="entropy-base20"
+            class="entropy-input"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="0-9,A-J for d20 rolls; uses selected word_count"
+          />
+          <button id="convert-base20-btn" class="terminal-btn">convert_base20</button>
+        </div>
+        <p id="base20-note" class="manual-entropy-note">
+          base20 for 20-sided dice: 12 words needs 30+ rolls, 15 needs 38+, 18 needs 45+, 21
+          needs 52+, 24 needs 60+
+        </p>
+
         <div class="status-line">
           <p id="status">Loading official BIP39 English wordlist...</p>
           <p id="runtime-badge" class="runtime-badge"></p>

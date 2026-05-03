@@ -1,4 +1,4 @@
-const CACHE_NAME = "mnemonic-lab-v2";
+const CACHE_NAME = "mnemonic-lab-v3";
 const APP_ASSETS = [
   "./",
   "./index.html",
