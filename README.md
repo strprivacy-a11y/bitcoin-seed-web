@@ -36,4 +36,7 @@ vercel
 vercel --prod
 ```
 ## Random String
-Terminal : cat /dev/urandom | tr -dc '0-9A-J' | fold -w 60 | head -n 1
+
+```bash
+cat /dev/urandom | tr -dc '0-9A-J' | fold -w 60 | head -n 1
+```
