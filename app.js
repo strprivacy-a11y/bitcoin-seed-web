@@ -15,6 +15,8 @@ const entropyDetailsNode = document.querySelector("#entropy-details");
 const derivedAddressesNode = document.querySelector("#derived-addresses");
 const statusNode = document.querySelector("#status");
 const runtimeBadge = document.querySelector("#runtime-badge");
+const cacheStatusNode = document.querySelector("#cache-status");
+const networkStatusNode = document.querySelector("#network-status");
 const installButton = document.querySelector("#install-btn");
 const installStatusNode = document.querySelector("#install-status");
 const lookupBalancesButton = document.querySelector("#lookup-balances-btn");
@@ -26,6 +28,7 @@ let currentDetails = null;
 let currentAddresses = [];
 let currentBalances = new Map();
 let deferredInstallPrompt = null;
+let isOfflineReady = false;
 
 const entropyByWordCount = {
   12: 128,
@@ -598,6 +601,34 @@ function setRuntimeBadge() {
       : "runtime=public";
 }
 
+function setCacheStatus(state, detail) {
+  cacheStatusNode.className = "cache-status";
+
+  if (state === "ready") {
+    cacheStatusNode.classList.add("ready");
+  } else if (state === "warning") {
+    cacheStatusNode.classList.add("warning");
+  }
+
+  cacheStatusNode.textContent = `cache_status=${detail}`;
+}
+
+function updateNetworkStatus() {
+  const online = navigator.onLine;
+  networkStatusNode.className = `network-status ${online ? "online" : "offline"}`;
+  networkStatusNode.textContent = `network_status=${online ? "online" : "offline"}`;
+}
+
+function updateReadyStatusMessage() {
+  if (!wordlist.length) {
+    return;
+  }
+
+  statusNode.textContent = isOfflineReady
+    ? "Ready. Select word count and generate locally. Core files are cached for offline use."
+    : "Ready. Select word count and generate locally.";
+}
+
 function isInstalledApp() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -628,6 +659,7 @@ function setInstallState({ supported = true, available = false, message }) {
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
+    setCacheStatus("warning", "unsupported");
     setInstallState({
       supported: false,
       message: "service workers are unavailable, so app install is disabled here.",
@@ -637,7 +669,12 @@ async function registerServiceWorker() {
 
   try {
     await navigator.serviceWorker.register("./sw.js");
+    await navigator.serviceWorker.ready;
+    isOfflineReady = true;
+    setCacheStatus("ready", "offline_ready");
+    updateReadyStatusMessage();
   } catch (error) {
+    setCacheStatus("warning", "registration_failed");
     setInstallState({
       supported: false,
       message:
@@ -705,6 +742,8 @@ window.addEventListener("appinstalled", () => {
 });
 
 setRuntimeBadge();
+setCacheStatus("warning", "checking");
+updateNetworkStatus();
 clearQrCode();
 clearEntropyDetails();
 clearDerivedAddresses();
@@ -715,11 +754,13 @@ setInstallState({
     : "waiting for browser install availability...",
 });
 registerServiceWorker();
+window.addEventListener("online", updateNetworkStatus);
+window.addEventListener("offline", updateNetworkStatus);
 
 loadWordlist()
   .then((words) => {
     wordlist = words;
-    statusNode.textContent = "Ready. Select word count and generate locally.";
+    updateReadyStatusMessage();
   })
   .catch((error) => {
     statusNode.textContent = error instanceof Error ? error.message : String(error);
