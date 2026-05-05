@@ -1,5 +1,6 @@
-const CACHE_NAME = "mnemonic-lab-v4";
+const CACHE_NAME = "mnemonic-lab-v5";
 const OFFLINE_FALLBACK_URL = "./index.html";
+const CONNECTIVITY_PATH = "/__connectivity__";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -42,6 +43,13 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+
+  if (requestUrl.pathname === CONNECTIVITY_PATH) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
