@@ -29,6 +29,8 @@ let currentAddresses = [];
 let currentBalances = new Map();
 let deferredInstallPrompt = null;
 let isOfflineReady = false;
+let connectivityCheckTimer = null;
+let connectivityCheckInFlight = false;
 
 const entropyByWordCount = {
   12: 128,
@@ -613,10 +615,16 @@ function setCacheStatus(state, detail) {
   cacheStatusNode.textContent = `cache_status=${detail}`;
 }
 
-function updateNetworkStatus() {
-  const online = navigator.onLine;
-  networkStatusNode.className = `network-status ${online ? "online" : "offline"}`;
-  networkStatusNode.textContent = `network_status=${online ? "online" : "offline"}`;
+function setNetworkStatus(detail) {
+  networkStatusNode.className = "network-status";
+
+  if (detail === "online") {
+    networkStatusNode.classList.add("online");
+  } else if (detail === "offline") {
+    networkStatusNode.classList.add("offline");
+  }
+
+  networkStatusNode.textContent = `network_status=${detail}`;
 }
 
 function updateReadyStatusMessage() {
@@ -627,6 +635,37 @@ function updateReadyStatusMessage() {
   statusNode.textContent = isOfflineReady
     ? "Ready. Select word count and generate locally. Core files are cached for offline use."
     : "Ready. Select word count and generate locally.";
+}
+
+async function checkConnectivity() {
+  if (connectivityCheckInFlight) {
+    return;
+  }
+
+  connectivityCheckInFlight = true;
+
+  try {
+    const response = await fetch(`./__connectivity__?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: {
+        "cache-control": "no-store",
+      },
+    });
+
+    setNetworkStatus(response.status < 500 ? "online" : "offline");
+  } catch {
+    setNetworkStatus("offline");
+  } finally {
+    connectivityCheckInFlight = false;
+  }
+}
+
+function scheduleConnectivityChecks() {
+  if (connectivityCheckTimer) {
+    window.clearInterval(connectivityCheckTimer);
+  }
+
+  connectivityCheckTimer = window.setInterval(checkConnectivity, 15000);
 }
 
 function isInstalledApp() {
@@ -743,7 +782,7 @@ window.addEventListener("appinstalled", () => {
 
 setRuntimeBadge();
 setCacheStatus("warning", "checking");
-updateNetworkStatus();
+setNetworkStatus(navigator.onLine ? "checking" : "offline");
 clearQrCode();
 clearEntropyDetails();
 clearDerivedAddresses();
@@ -754,8 +793,15 @@ setInstallState({
     : "waiting for browser install availability...",
 });
 registerServiceWorker();
-window.addEventListener("online", updateNetworkStatus);
-window.addEventListener("offline", updateNetworkStatus);
+window.addEventListener("online", checkConnectivity);
+window.addEventListener("offline", () => setNetworkStatus("offline"));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    checkConnectivity();
+  }
+});
+scheduleConnectivityChecks();
+checkConnectivity();
 
 loadWordlist()
   .then((words) => {
