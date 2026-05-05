@@ -1,4 +1,5 @@
-const CACHE_NAME = "mnemonic-lab-v3";
+const CACHE_NAME = "mnemonic-lab-v4";
+const OFFLINE_FALLBACK_URL = "./index.html";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -50,15 +51,23 @@ self.addEventListener("fetch", (event) => {
         return cachedResponse;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
-        }
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (!networkResponse || networkResponse.status !== 200) {
+            return networkResponse;
+          }
 
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-        return networkResponse;
-      });
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          return networkResponse;
+        })
+        .catch(async () => {
+          if (event.request.mode === "navigate") {
+            return caches.match(OFFLINE_FALLBACK_URL);
+          }
+
+          throw new Error("Network request failed and no cached response was available.");
+        });
     }),
   );
 });

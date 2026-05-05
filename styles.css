@@ -171,6 +171,10 @@ select:focus,
   margin: 0;
 }
 
+.status-line-secondary {
+  margin-top: 6px;
+}
+
 .install-panel {
   display: flex;
   gap: 12px;
@@ -199,6 +203,21 @@ select:focus,
 
 .runtime-badge {
   color: var(--accent);
+}
+
+.cache-status,
+.network-status {
+  color: var(--muted);
+}
+
+.cache-status.ready,
+.network-status.online {
+  color: var(--accent);
+}
+
+.cache-status.warning,
+.network-status.offline {
+  color: var(--text);
 }
 
 .output-panel {
